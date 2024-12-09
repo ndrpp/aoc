@@ -10,19 +10,41 @@ const TOLERANCE: i32 = 3;
 fn main() {
     let lines = read_lines("./input");
     let mut safe_lines: i32 = 0;
+    let mut safe_dampened: i32 = 0;
 
     for line in lines.iter() {
         let values = line.split(" ").collect::<Vec<&str>>();
 
-        if is_safe(values) {
+        if is_safe(&values, false, true) {
             safe_lines += 1;
+        }
+        if is_safe(&values, false, false) {
+            safe_dampened += 1;
         }
     }
 
-    println!("Safe lines: {}", safe_lines)
+    println!("Safe lines: {}", safe_lines);
+    println!("Safe lines after dampening: {}", safe_dampened);
 }
 
-fn is_safe(values: Vec<&str>) -> bool {
+fn is_safe_with_elements_removed(values: &Vec<&str>) -> bool {
+    for i in 0..values.len() {
+        let filtered_numbers = values
+            .iter()
+            .enumerate()
+            .filter(|&(index, _)| index != i)
+            .map(|(_, &num)| num)
+            .collect();
+
+        if is_safe(&filtered_numbers, false, true) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fn is_safe(values: &Vec<&str>, dampener_disabled: bool, dampener_used: bool) -> bool {
     let mut i = 0;
     let mut order = None;
     while i < values.len() {
@@ -40,7 +62,11 @@ fn is_safe(values: Vec<&str>) -> bool {
         }
     }
 
-    return false;
+    if dampener_used || dampener_disabled {
+        false
+    } else {
+        is_safe_with_elements_removed(values)
+    }
 }
 
 fn check_numbers(input_order: Option<Order>, first: i32, second: i32) -> (Option<Order>, bool) {
