@@ -2,48 +2,70 @@ use std::fs;
 
 enum Order {
     Asc,
-    Desc
+    Desc,
 }
+
+const TOLERANCE: i32 = 3;
 
 fn main() {
     let lines = read_lines("./input");
     let mut safe_lines: i32 = 0;
 
     for line in lines.iter() {
-        let order: Order;
         let values = line.split(" ").collect::<Vec<&str>>();
-        if values[0] > values[1] {
-            order = Order::Desc
-        } else {
-            order = Order::Asc
-        }
-    
-        let mut i = 0;
-        while i < values.len() {
-            if i + 1 == values.len() {
-                safe_lines += 1;
-                break;
-            }
-            let cur: i32 = values[i].parse().unwrap();
-            let next: i32 = values[i + 1].parse().unwrap();
-            match order {
-                Order::Asc => {
-                    if next - cur < 1 || next - cur > 3 {
-                        break;
-                    }
-                },
-                Order::Desc => {
-                    if cur - next > 3 || cur - next < 1 {
-                        break;
-                    }
-                }
-            }
-            
-            i += 1;
+
+        if is_safe(values) {
+            safe_lines += 1;
         }
     }
 
     println!("Safe lines: {}", safe_lines)
+}
+
+fn is_safe(values: Vec<&str>) -> bool {
+    let mut i = 0;
+    let mut order = None;
+    while i < values.len() {
+        if i == values.len() - 1 {
+            return true;
+        }
+        let cur: i32 = values[i].parse().unwrap();
+        let next: i32 = values[i + 1].parse().unwrap();
+        i += 1;
+
+        let (new_order, success) = check_numbers(order, cur, next);
+        order = new_order;
+        if !success {
+            break;
+        }
+    }
+
+    return false;
+}
+
+fn check_numbers(input_order: Option<Order>, first: i32, second: i32) -> (Option<Order>, bool) {
+    let order: Order;
+    match input_order {
+        Some(val) => order = val,
+        None => {
+            if first < second {
+                order = Order::Asc;
+            } else {
+                order = Order::Desc;
+            }
+        }
+    }
+
+    match order {
+        Order::Asc => (
+            Some(Order::Asc),
+            !(second <= first || second > first + TOLERANCE),
+        ),
+        Order::Desc => (
+            Some(Order::Desc),
+            !(second >= first || second < first - TOLERANCE),
+        ),
+    }
 }
 
 fn read_lines(filename: &str) -> Vec<String> {
